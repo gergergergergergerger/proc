@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BPMN 2.0 Схема</title>
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@14.0.1/dist/assets/bpmn-js.css">
+    <script src="https://unpkg.com/bpmn-js@14.0.1/dist/bpmn-navigated-viewer.development.js"></script>
+    <style>
+        html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; }
+        #canvas { width:100%; height:100vh; background:#f8f8f8; }
+        #controls {
+            position: absolute; top:15px; left:15px;
+            background:white; padding:10px; border-radius:5px;
+            box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:100;
+        }
+        button { margin:0 5px; padding:8px 12px; cursor:pointer; }
+        .error { color: red; padding: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="canvas"></div>
+    <div id="controls">
+        <button onclick="zoom(0.2)">+ Увеличить</button>
+        <button onclick="zoom(-0.2)">- Уменьшить</button>
+        <button onclick="viewer.get('canvas').zoom('fit-viewport')">Сбросить</button>
+        <button onclick="document.documentElement.requestFullscreen()">На весь экран</button>
+        <span id="status">Загрузка...</span>
+    </div>
+
+    <script>
+        let viewer = new BpmnJS({ container: '#canvas' });
+
+        // 1. Получаем имя файла схемы из URL (например, ...viewer.html?diagram=my.bpmn)
+        const urlParams = new URLSearchParams(window.location.search);
+        const diagramFileName = urlParams.get('diagram') || 'diagram.bpmn'; // по умолчанию
+
+        // 2. Загружаем и отображаем схему
+        fetch(diagramFileName)
+            .then(response => {
+                if (!response.ok) throw new Error(`Файл "${diagramFileName}" не найден.`);
+                return response.text();
+            })
+            .then(xml => viewer.importXML(xml))
+            .then(() => {
+                viewer.get('canvas').zoom('fit-viewport');
+                document.getElementById('status').textContent = `Схема: ${diagramFileName}`;
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                document.getElementById('canvas').innerHTML =
+                    `<div class="error"><h3>Ошибка</h3><p>${err.message}</p><p>Убедитесь, что файл лежит в одной папке с viewer.html.</p></div>`;
+                document.getElementById('status').textContent = 'Ошибка загрузки';
+            });
+
+        function zoom(step) { viewer.get('zoomScroll').stepZoom(step); }
+    </script>
+</body>
+</html>
